@@ -1,0 +1,2 @@
+# namibian-currency-detector
+
