@@ -164,7 +164,7 @@ export default function App() {
 
         // draw rect
         ctx.lineWidth = 2;
-        ctx.strokeStyle = "rgba(220,38,38,1)";
+        ctx.strokeStyle = "rgba(183, 16, 171, 1)";
         ctx.strokeRect(rx, ry, rw, rh);
 
         // label
@@ -176,7 +176,7 @@ export default function App() {
         let labelY = ry - textH - padding;
         if (labelY < 0) labelY = ry + padding;
 
-        ctx.fillStyle = "rgba(220,38,38,0.85)";
+        ctx.fillStyle = "rgba(125, 16, 150, 0.85)";
         ctx.fillRect(rx - 1, labelY, textW + padding, textH + 4);
         ctx.fillStyle = "white";
         ctx.fillText(label, rx + padding / 2, labelY + textH - 3);
@@ -203,15 +203,33 @@ export default function App() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">YOLOv8 Object Detection</h1>
+      <h1 className="text-2xl font-bold mb-4">Namibian Currency Detector</h1>
 
-      {/* Upload controls */}
-      <div className="mb-4">
-        <input type="file" accept="image/*" onChange={handleFileChange} />
-        <button onClick={handleUpload} disabled={loading} style={{ marginLeft: 12 }}>
-          {loading ? "Detecting..." : "Upload & Detect"}
-        </button>
-      </div>
+   <div className="mb-4 flex items-center gap-3">
+    {/* 1. The custom styled label acts as the visible button */}
+    <label htmlFor="file-upload"  
+           className="px-4 py-2 bg-blue-500 text-white font-medium rounded-lg cursor-pointer hover:bg-blue-600 transition duration-150">
+        Choose File 🖼️
+    </label>
+    
+    {/* 2. The actual input is hidden, but its functionality is triggered by the label */}
+    <input 
+        id="file-upload" // <- Link this ID to the label's htmlFor
+        type="file" 
+        accept="image/*"
+        onChange={handleFileChange}
+        // Tailwind class to visually hide the input
+        className="hidden" 
+    />
+
+    <button onClick={handleUpload}
+        disabled={loading} 
+        style={{ marginLeft: 12 }}
+        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        {loading ? "Detecting..." : "Upload & Detect"}
+    </button>
+</div>
+      
 
       {/* Threshold & dedupe */}
       <div style={{ marginBottom: 12 }}>
