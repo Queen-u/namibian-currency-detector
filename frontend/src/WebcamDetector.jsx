@@ -38,6 +38,7 @@ export default function WebcamDetector({
 
   const timerRef = useRef(null);
   const abortRef = useRef(null);
+  const liveRef = useRef(false); // Use ref to track live state for callbacks
 
   // --- IoU + dedupe (same logic as App.jsx)
   function iou(boxA, boxB) {
@@ -119,6 +120,7 @@ export default function WebcamDetector({
     videoRef.current.srcObject = null;
     setStreaming(false);
     setLive(false);
+    liveRef.current = false;
     clearTimer();
     drawOverlay(); // clear overlay
   };
@@ -184,7 +186,7 @@ export default function WebcamDetector({
     } catch (err) {
       if (err.name !== "AbortError") {
         console.error("Predict error", err);
-        if (!live) alert("Prediction failed: " + err.message);
+        if (!liveRef.current) alert("Prediction failed: " + err.message);
       } else {
         console.log("Aborted previous request");
       }
@@ -201,23 +203,34 @@ export default function WebcamDetector({
     }
     if (live) return;
     setLive(true);
+    liveRef.current = true;
     scheduleNext();
   };
 
   const scheduleNext = () => {
     clearTimer();
     timerRef.current = setTimeout(async () => {
+      if (!liveRef.current) return; // Check ref instead of state
+      
       if (abortRef.current) {
         abortRef.current.abort();
+        abortRef.current = null;
       }
+      
       await captureAndPredict();
-      if (live) scheduleNext();
+      
+      // Schedule next only if still in live mode
+      if (liveRef.current) {
+        scheduleNext();
+      }
     }, intervalMs);
   };
 
   const clearTimer = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = null;
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
     if (abortRef.current) {
       abortRef.current.abort();
       abortRef.current = null;
@@ -226,9 +239,23 @@ export default function WebcamDetector({
 
   const stopLive = () => {
     setLive(false);
+    liveRef.current = false;
     clearTimer();
     setFps(0);
   };
+
+  // Update live ref when state changes
+  useEffect(() => {
+    liveRef.current = live;
+  }, [live]);
+
+  // Restart live mode when interval changes
+  useEffect(() => {
+    if (live && streaming) {
+      clearTimer();
+      scheduleNext();
+    }
+  }, [intervalMs]);
 
   useEffect(() => {
     return () => {

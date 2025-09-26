@@ -1,3 +1,5 @@
+// frontend/src/DetectionResults.jsx
+
 import React from "react";
 
 const DetectionResults = ({ results }) => {
