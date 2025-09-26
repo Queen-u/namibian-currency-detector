@@ -1,4 +1,7 @@
+// frontend/src/App.jsx
+
 import React, { useState, useRef, useEffect } from "react";
+import Lottie from 'lottie-react';
 import WebcamDetector from "./WebcamDetector";
 
 /**
@@ -19,7 +22,8 @@ export default function App() {
   const [file, setFile] = useState(null);
   const [imageSrc, setImageSrc] = useState(null);
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true
+  const [animationData, setAnimationData] = useState(null);
 
   // totals UI controls
   const [threshold, setThreshold] = useState(0.30); // confidence threshold
@@ -27,6 +31,22 @@ export default function App() {
 
   const imgRef = useRef(null);
   const canvasRef = useRef(null);
+
+  // Load Lottie animation data
+  useEffect(() => {
+    // Assuming animation is in public folder
+    fetch('/EbaUdKIf9s.json')
+      .then(response => response.json())
+      .then(data => {
+        setAnimationData(data);
+        // Hide loading after 2 seconds when animation loads
+        setTimeout(() => setLoading(false), 2000);
+      })
+      .catch(err => {
+        console.error('Failed to load animation:', err);
+        setLoading(false);
+      });
+  }, []);
 
   // --- Utility: IoU between two boxes [x1,y1,x2,y2]
   function iou(boxA, boxB) {
@@ -203,34 +223,74 @@ export default function App() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
+      {/* Static animated logo at top */}
+      {animationData && (
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <Lottie 
+            animationData={animationData}
+            style={{ 
+              width: 100, 
+              height: 100,
+              margin: '0 auto'
+            }}
+            loop={true}
+            autoplay={true}
+          />
+        </div>
+      )}
+      
       <h1 className="text-2xl font-bold mb-4">Namibian Currency Detector</h1>
 
-   <div className="mb-4 flex items-center gap-3">
-    {/* 1. The custom styled label acts as the visible button */}
-    <label htmlFor="file-upload"  
-           className="px-4 py-2 bg-blue-500 text-white font-medium rounded-lg cursor-pointer hover:bg-blue-600 transition duration-150">
-        Choose File 🖼️
-    </label>
-    
-    {/* 2. The actual input is hidden, but its functionality is triggered by the label */}
-    <input 
-        id="file-upload" // <- Link this ID to the label's htmlFor
-        type="file" 
-        accept="image/*"
-        onChange={handleFileChange}
-        // Tailwind class to visually hide the input
-        className="hidden" 
-    />
+      <div className="mb-4 flex items-center gap-3">
+        {/* Custom styled label that matches your CSS theme */}
+        <label 
+          htmlFor="file-upload"
+          className="upload-button"
+          style={{
+            borderRadius: '8px',
+            border: '1px solid transparent',
+            padding: '0.6em 1.2em',
+            fontSize: '1em',
+            fontWeight: '500',
+            fontFamily: 'inherit',
+            backgroundColor: '#e869cf',
+            cursor: 'pointer',
+            transition: 'border-color 0.25s, background-color 0.25s',
+            color: 'inherit',
+            display: 'inline-block',
+            textAlign: 'center',
+            textDecoration: 'none'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.borderColor = '#e33e80';
+            e.target.style.backgroundColor = '#52072f';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.borderColor = 'transparent';
+            e.target.style.backgroundColor = '#e869cf';
+          }}
+        >
+          Choose File 🖼️
+        </label>
+        
+        {/* Hidden file input */}
+        <input 
+          id="file-upload"
+          type="file" 
+          accept="image/*"
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+        />
 
-    <button onClick={handleUpload}
-        disabled={loading} 
-        style={{ marginLeft: 12 }}
-        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed">
-        {loading ? "Detecting..." : "Upload & Detect"}
-    </button>
-</div>
+        <button 
+          onClick={handleUpload}
+          disabled={loading}
+          style={{ marginLeft: 12 }}
+        >
+          {loading ? "Detecting..." : "Upload & Detect"}
+        </button>
+      </div>
       
-
       {/* Threshold & dedupe */}
       <div style={{ marginBottom: 12 }}>
         <label>
@@ -252,18 +312,82 @@ export default function App() {
         </label>
       </div>
 
-      {/* Image + overlay */}
-      <div style={{ position: "relative", display: imageSrc ? "inline-block" : "none" }}>
+      {/* Lottie Loading Animation Overlay */}
+      {loading && animationData && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          backdropFilter: 'blur(5px)'
+        }}>
+          <div style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            borderRadius: '15px',
+            padding: '30px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+            textAlign: 'center',
+            maxWidth: '300px'
+          }}>
+            <Lottie 
+              animationData={animationData}
+              style={{ 
+                width: 150, 
+                height: 150 
+              }}
+              loop={true}
+              autoplay={true}
+            />
+            <p style={{ 
+              marginTop: '15px', 
+              color: '#333',
+              fontSize: '16px',
+              fontWeight: '500'
+            }}>
+              Detecting currency...
+            </p>
+          </div>
+        </div>
+      )}
+
+  {/* Image + overlay */}
+      <div style={{ 
+        position: "relative", 
+        display: imageSrc ? "flex" : "none", 
+        justifyContent: "center", // This centers the child elements horizontally
+        alignItems: "center", // Add this to center vertically if the container has a fixed height
+        marginBottom: "20px" 
+      }}>
         <img
           ref={imgRef}
           src={imageSrc}
           alt="uploaded"
-          style={{ maxWidth: "800px", width: "100%", height: "auto", display: "block", borderRadius: 8 }}
+          style={{ 
+            maxWidth: "50%", // Changed from 800px to 100% to fill container max-width
+            width: "auto", // Set width to auto to maintain aspect ratio and be controlled by maxWidth
+            height: "auto", 
+            display: "block", 
+            transform: "translate(50%, 0)",
+            borderRadius: 8 
+          }}
           crossOrigin="anonymous"
         />
         <canvas
           ref={canvasRef}
-          style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none", borderRadius: 8 }}
+          style={{ 
+            position: "absolute", 
+            left: "50%", 
+            top: "50%", 
+            transform: "translate(-50%, -50%)", 
+            pointerEvents: "none", 
+            borderRadius: 8 
+          }}
         />
       </div>
 
